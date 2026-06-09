@@ -3,12 +3,14 @@ class UserModel {
   final String fullName;
   final String email;
   final String password;
+  final String role; // 'admin' ou 'client'
 
   UserModel({
     this.id,
     required this.fullName,
     required this.email,
     required this.password,
+    this.role = 'client', // Default to client
   });
 
   Map<String, dynamic> toMap() {
@@ -17,6 +19,7 @@ class UserModel {
       'fullName': fullName,
       'email': email,
       'password': password,
+      'role': role,
     };
   }
 
@@ -26,6 +29,7 @@ class UserModel {
       fullName: map['fullName'],
       email: map['email'],
       password: map['password'],
+      role: map['role'] ?? 'client',
     );
   }
 
@@ -34,12 +38,14 @@ class UserModel {
     String? fullName,
     String? email,
     String? password,
+    String? role,
   }) {
     return UserModel(
       id: id ?? this.id,
       fullName: fullName ?? this.fullName,
       email: email ?? this.email,
       password: password ?? this.password,
+      role: role ?? this.role,
     );
   }
 }

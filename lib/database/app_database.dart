@@ -23,8 +23,9 @@ class AppDatabase {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2, // Upgrade to version 2
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
   }
 
@@ -34,7 +35,8 @@ class AppDatabase {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         fullName TEXT NOT NULL,
         email TEXT NOT NULL UNIQUE,
-        password TEXT NOT NULL
+        password TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'client'
       )
     ''');
 
@@ -83,9 +85,38 @@ class AppDatabase {
     ''');
 
     await _insertInitialHotels(db);
+    await _insertInitialAdmin(db);
+  }
+
+  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Ignore error if column already exists
+      try {
+        await db.execute("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'client'");
+      } catch (e) {
+        // Column might exist
+      }
+      await _insertInitialAdmin(db);
+    }
+  }
+
+  Future<void> _insertInitialAdmin(Database db) async {
+    final maps = await db.query('users', where: 'email = ?', whereArgs: ['admin@booknest.com']);
+    if (maps.isEmpty) {
+      final admin = UserModel(
+        fullName: 'Administrateur',
+        email: 'admin@booknest.com',
+        password: 'admin123',
+        role: 'admin',
+      );
+      await db.insert('users', admin.toMap());
+    }
   }
 
   Future<void> _insertInitialHotels(Database db) async {
+    final maps = await db.query('hotels');
+    if (maps.isNotEmpty) return; // Prevent duplicates if already seeded
+
     final initialHotels = [
       HotelModel(
         name: 'Hotel Marina Bay',
@@ -95,11 +126,7 @@ class AppDatabase {
         pricePerNight: 750,
         rating: 4.7,
         imageUrl: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        hasWifi: true,
-        hasParking: true,
-        hasPool: true,
-        hasRestaurant: true,
-        hasAC: true,
+        hasWifi: true, hasParking: true, hasPool: true, hasRestaurant: true, hasAC: true,
       ),
       HotelModel(
         name: 'Hotel Atlas View',
@@ -109,11 +136,7 @@ class AppDatabase {
         pricePerNight: 900,
         rating: 4.8,
         imageUrl: 'https://images.unsplash.com/photo-1551882547-ff40c0d589rx?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        hasWifi: true,
-        hasParking: false,
-        hasPool: true,
-        hasRestaurant: true,
-        hasAC: true,
+        hasWifi: true, hasParking: false, hasPool: true, hasRestaurant: true, hasAC: true,
       ),
       HotelModel(
         name: 'Blue Pearl Hotel',
@@ -123,11 +146,7 @@ class AppDatabase {
         pricePerNight: 500,
         rating: 4.5,
         imageUrl: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        hasWifi: true,
-        hasParking: false,
-        hasPool: false,
-        hasRestaurant: true,
-        hasAC: true,
+        hasWifi: true, hasParking: false, hasPool: false, hasRestaurant: true, hasAC: true,
       ),
       HotelModel(
         name: 'Rabat Business Hotel',
@@ -137,11 +156,7 @@ class AppDatabase {
         pricePerNight: 680,
         rating: 4.3,
         imageUrl: 'https://images.unsplash.com/photo-1542314831-c6a4203251a8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        hasWifi: true,
-        hasParking: true,
-        hasPool: false,
-        hasRestaurant: true,
-        hasAC: true,
+        hasWifi: true, hasParking: true, hasPool: false, hasRestaurant: true, hasAC: true,
       ),
       HotelModel(
         name: 'Agadir Beach Resort',
@@ -151,11 +166,7 @@ class AppDatabase {
         pricePerNight: 1100,
         rating: 4.9,
         imageUrl: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        hasWifi: true,
-        hasParking: true,
-        hasPool: true,
-        hasRestaurant: true,
-        hasAC: true,
+        hasWifi: true, hasParking: true, hasPool: true, hasRestaurant: true, hasAC: true,
       ),
     ];
 
@@ -189,6 +200,19 @@ class AppDatabase {
       'users',
       where: 'email = ?',
       whereArgs: [email],
+    );
+    if (maps.isNotEmpty) {
+      return UserModel.fromMap(maps.first);
+    }
+    return null;
+  }
+
+  Future<UserModel?> getUserById(int id) async {
+    final database = await instance.db;
+    final maps = await database.query(
+      'users',
+      where: 'id = ?',
+      whereArgs: [id],
     );
     if (maps.isNotEmpty) {
       return UserModel.fromMap(maps.first);

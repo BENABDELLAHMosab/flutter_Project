@@ -7,8 +7,9 @@ import 'hotel_detail_screen.dart';
 
 class HotelListScreen extends StatefulWidget {
   final String? searchQuery;
+  final String? initialQuery;
 
-  const HotelListScreen({super.key, this.searchQuery});
+  const HotelListScreen({super.key, this.searchQuery, this.initialQuery});
 
   @override
   State<HotelListScreen> createState() => _HotelListScreenState();
@@ -26,9 +27,10 @@ class _HotelListScreenState extends State<HotelListScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.searchQuery != null) {
-      _searchController.text = widget.searchQuery!;
-      _performSearch(widget.searchQuery!);
+    final query = widget.initialQuery ?? widget.searchQuery;
+    if (query != null) {
+      _searchController.text = query;
+      _performSearch(query);
     } else {
       _loadAllHotels();
     }

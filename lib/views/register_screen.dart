@@ -3,10 +3,8 @@ import '../controllers/auth_controller.dart';
 import '../models/user_model.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
-import '../utils/validators.dart';
 import '../utils/app_colors.dart';
 import 'login_screen.dart';
-import 'home_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -16,52 +14,55 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _confirmController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  
   final _authController = AuthController();
+  final _formKey = GlobalKey<FormState>();
+  
   bool _isLoading = false;
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _fullNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _confirmController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
   Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
+      if (_passwordController.text != _confirmPasswordController.text) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Les mots de passe ne correspondent pas'), backgroundColor: AppColors.error),
+        );
+        return;
+      }
+
       setState(() => _isLoading = true);
-      
-      final newUser = UserModel(
-        fullName: _nameController.text.trim(),
+
+      final user = UserModel(
+        fullName: _fullNameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      final success = await _authController.register(newUser);
-      
+      final success = await _authController.register(user);
+
       if (!mounted) return;
       setState(() => _isLoading = false);
 
       if (success) {
-        // Auto login after register
-        await _authController.login(newUser.email, newUser.password);
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Compte créé avec succès ! Connectez-vous.'), backgroundColor: AppColors.success),
         );
+        Navigator.pop(context); // Go back to login
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cet email est déjà utilisé'),
-            backgroundColor: AppColors.error,
-          ),
+          const SnackBar(content: Text('Cet email est déjà utilisé.'), backgroundColor: AppColors.error),
         );
       }
     }
@@ -72,9 +73,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Créer un compte'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: Theme.of(context).colorScheme.onSurface,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -84,68 +82,78 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const SizedBox(height: 16),
                 const Text(
                   'Rejoignez BookNest',
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Veuillez remplir les informations ci-dessous',
-                  style: TextStyle(color: Colors.grey),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
                 CustomTextField(
                   label: 'Nom complet',
-                  hint: 'John Doe',
-                  prefixIcon: Icons.person,
-                  controller: _nameController,
-                  validator: Validators.validateName,
+                  hint: 'Entrez votre nom',
+                  prefixIcon: Icons.person_outline,
+                  controller: _fullNameController,
+                  validator: (value) => value == null || value.isEmpty ? 'Champ requis' : null,
                 ),
+                const SizedBox(height: 16),
                 CustomTextField(
                   label: 'Email',
-                  hint: 'votre@email.com',
-                  prefixIcon: Icons.email,
+                  hint: 'Entrez votre email',
+                  prefixIcon: Icons.email_outlined,
                   controller: _emailController,
-                  validator: Validators.validateEmail,
                   keyboardType: TextInputType.emailAddress,
+                  validator: (value) => value == null || value.isEmpty ? 'Champ requis' : null,
                 ),
+                const SizedBox(height: 16),
                 CustomTextField(
                   label: 'Mot de passe',
-                  hint: '******',
-                  prefixIcon: Icons.lock,
+                  hint: 'Créer un mot de passe',
+                  prefixIcon: Icons.lock_outline,
                   controller: _passwordController,
                   isPassword: true,
-                  validator: Validators.validatePassword,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) return 'Champ requis';
+                    if (value.length < 6) return 'Le mot de passe doit contenir au moins 6 caractères';
+                    return null;
+                  },
                 ),
+                const SizedBox(height: 16),
                 CustomTextField(
                   label: 'Confirmer le mot de passe',
-                  hint: '******',
-                  prefixIcon: Icons.lock_outline,
-                  controller: _confirmController,
+                  hint: 'Répétez le mot de passe',
+                  prefixIcon: Icons.lock_reset,
+                  controller: _confirmPasswordController,
                   isPassword: true,
-                  validator: (val) => Validators.validateConfirmPassword(val, _passwordController.text),
+                  validator: (value) => value == null || value.isEmpty ? 'Champ requis' : null,
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 32),
                 CustomButton(
                   text: 'S\'inscrire',
                   onPressed: _register,
                   isLoading: _isLoading,
                 ),
                 const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text('Déjà un compte ?'),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => const LoginScreen()),
-                        );
-                      },
-                      child: const Text('Se connecter'),
-                    ),
-                  ],
+                Center(
+                  child: Wrap( // Fix horizontal overflow
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      const Text('Vous avez déjà un compte ? '),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                          );
+                        },
+                        child: const Text(
+                          'Se connecter',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),

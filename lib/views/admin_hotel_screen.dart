@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../controllers/hotel_controller.dart';
+import '../controllers/auth_controller.dart';
 import '../models/hotel_model.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
@@ -14,12 +15,27 @@ class AdminHotelScreen extends StatefulWidget {
 
 class _AdminHotelScreenState extends State<AdminHotelScreen> {
   final _hotelController = HotelController();
+  final _authController = AuthController();
   List<HotelModel> _hotels = [];
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
+    _checkRoleAndLoad();
+  }
+
+  Future<void> _checkRoleAndLoad() async {
+    final role = await _authController.getCurrentUserRole();
+    if (role != 'admin') {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Accès réservé à l\'administrateur')),
+        );
+        Navigator.pop(context); // Security Kickout
+      }
+      return;
+    }
     _loadHotels();
   }
 
@@ -78,7 +94,8 @@ class _AdminHotelScreenState extends State<AdminHotelScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gestion des Hôtels'),
+        title: const Text('Gestion Hôtels'),
+        automaticallyImplyLeading: false, // Inside bottom nav usually
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
