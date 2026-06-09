@@ -92,12 +92,13 @@ class _BookingScreenState extends State<BookingScreen> {
       hotelId: widget.hotel.id!,
       hotelName: widget.hotel.name,
       hotelCity: widget.hotel.city,
+      hotelImageUrl: widget.hotel.imageUrl,
       checkIn: dateFormat.format(_checkInDate!),
       checkOut: dateFormat.format(_checkOutDate!),
       guests: _guests,
       rooms: _rooms,
       totalPrice: _totalPrice,
-      status: 'Confirmée',
+      status: 'confirmed',
     );
 
     final success = await _bookingController.createBooking(booking);
@@ -181,6 +182,18 @@ class _BookingScreenState extends State<BookingScreen> {
                     width: 60,
                     height: 60,
                     fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 60,
+                        height: 60,
+                        color: Colors.grey.shade200,
+                        child: const Icon(
+                          Icons.hotel,
+                          size: 32,
+                          color: Colors.grey,
+                        ),
+                      );
+                    },
                   ),
                 ),
                 title: Text(widget.hotel.name, style: const TextStyle(fontWeight: FontWeight.bold)),

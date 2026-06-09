@@ -25,11 +25,17 @@ class HotelCard extends StatelessWidget {
                   height: 180,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    height: 180,
-                    color: Colors.grey[300],
-                    child: const Icon(Icons.image_not_supported, size: 50),
-                  ),
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 180,
+                      color: Colors.grey.shade200,
+                      child: const Icon(
+                        Icons.hotel,
+                        size: 48,
+                        color: Colors.grey,
+                      ),
+                    );
+                  },
                 ),
                 Positioned(
                   top: 12,

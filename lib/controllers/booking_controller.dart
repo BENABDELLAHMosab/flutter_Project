@@ -41,7 +41,10 @@ class BookingController {
 
   Future<bool> cancelBooking(String bookingId) async {
     try {
-      await _bookingsRef.doc(bookingId).update({'status': 'cancelled'});
+      await _bookingsRef.doc(bookingId).update({
+        'status': 'cancelled',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
       return true;
     } catch (e) {
       debugPrint('Erreur cancelBooking: $e');

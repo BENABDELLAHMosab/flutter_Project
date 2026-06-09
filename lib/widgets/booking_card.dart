@@ -15,7 +15,11 @@ class BookingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCancelled = booking.status == 'Cancelled';
+    // ignore: avoid_print
+    print('BOOKING CARD: ${booking.hotelName} / ${booking.hotelCity} / ${booking.status}');
+
+    final isCancelled = booking.status == 'cancelled';
+    final isConfirmed = booking.status == 'confirmed';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -26,14 +30,26 @@ class BookingCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                if (booking.hotel?.imageUrl != null)
+                if (booking.hotelImageUrl.isNotEmpty)
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image.network(
-                      booking.hotel!.imageUrl,
+                      booking.hotelImageUrl,
                       width: 60,
                       height: 60,
                       fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 60,
+                          height: 60,
+                          color: Colors.grey.shade200,
+                          child: const Icon(
+                            Icons.hotel,
+                            size: 32,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
                     ),
                   )
                 else
@@ -52,14 +68,14 @@ class BookingCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        booking.hotel?.name ?? 'Hôtel inconnu',
+                        booking.hotelName.isNotEmpty ? booking.hotelName : 'Hôtel inconnu',
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        booking.hotel?.city ?? 'Ville inconnue',
+                        booking.hotelCity.isNotEmpty ? booking.hotelCity : 'Ville inconnue',
                         style: TextStyle(color: Colors.grey[600], fontSize: 14),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -137,7 +153,7 @@ class BookingCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (!isCancelled)
+                if (isConfirmed)
                   OutlinedButton(
                     onPressed: onCancel,
                     style: OutlinedButton.styleFrom(

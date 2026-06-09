@@ -9,6 +9,7 @@ class BookingModel {
   final String hotelId;
   final String hotelName;
   final String hotelCity;
+  final String hotelImageUrl;
   final String checkIn;
   final String checkOut;
   final int guests;
@@ -28,6 +29,7 @@ class BookingModel {
     required this.hotelId,
     required this.hotelName,
     required this.hotelCity,
+    required this.hotelImageUrl,
     required this.checkIn,
     required this.checkOut,
     required this.guests,
@@ -46,6 +48,7 @@ class BookingModel {
       'hotelId': hotelId,
       'hotelName': hotelName,
       'hotelCity': hotelCity,
+      'hotelImageUrl': hotelImageUrl,
       'checkIn': checkIn,
       'checkOut': checkOut,
       'guests': guests,
@@ -57,6 +60,11 @@ class BookingModel {
   }
 
   factory BookingModel.fromMap(Map<String, dynamic> map, String documentId, {HotelModel? hotel}) {
+    // ignore: avoid_print
+    print('BOOKING DATA FROM FIRESTORE: $map');
+    // ignore: avoid_print
+    print('hotelName=${map['hotelName']} hotelCity=${map['hotelCity']} status=${map['status']}');
+    
     return BookingModel(
       id: documentId,
       userId: map['userId'] ?? '',
@@ -65,12 +73,13 @@ class BookingModel {
       hotelId: map['hotelId'] ?? '',
       hotelName: map['hotelName'] ?? 'Hôtel inconnu',
       hotelCity: map['hotelCity'] ?? '',
+      hotelImageUrl: map['hotelImageUrl'] ?? '',
       checkIn: map['checkIn'] ?? '',
       checkOut: map['checkOut'] ?? '',
       guests: map['guests'] ?? 1,
       rooms: map['rooms'] ?? 1,
       totalPrice: (map['totalPrice'] ?? 0).toDouble(),
-      status: map['status'] ?? 'pending',
+      status: map['status'] ?? 'confirmed',
       createdAt: map['createdAt'] != null ? (map['createdAt'] as Timestamp).toDate() : null,
       hotel: hotel,
     );
@@ -84,6 +93,7 @@ class BookingModel {
     String? hotelId,
     String? hotelName,
     String? hotelCity,
+    String? hotelImageUrl,
     String? checkIn,
     String? checkOut,
     int? guests,
@@ -101,6 +111,7 @@ class BookingModel {
       hotelId: hotelId ?? this.hotelId,
       hotelName: hotelName ?? this.hotelName,
       hotelCity: hotelCity ?? this.hotelCity,
+      hotelImageUrl: hotelImageUrl ?? this.hotelImageUrl,
       checkIn: checkIn ?? this.checkIn,
       checkOut: checkOut ?? this.checkOut,
       guests: guests ?? this.guests,

@@ -110,7 +110,20 @@ class _AdminHotelScreenState extends State<AdminHotelScreen> {
             itemBuilder: (context, index) {
               final hotel = hotels[index];
               return ListTile(
-                leading: CircleAvatar(backgroundImage: NetworkImage(hotel.imageUrl)),
+                leading: ClipOval(
+                  child: Image.network(
+                    hotel.imageUrl,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      width: 40,
+                      height: 40,
+                      color: Colors.grey.shade200,
+                      child: const Icon(Icons.hotel, color: Colors.grey, size: 24),
+                    ),
+                  ),
+                ),
                 title: Text(hotel.name),
                 subtitle: Text(hotel.city),
                 trailing: Row(
