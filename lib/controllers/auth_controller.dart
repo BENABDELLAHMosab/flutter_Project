@@ -41,8 +41,24 @@ class AuthController {
       case 'wrong-password':
       case 'invalid-credential':
         return 'Email ou mot de passe incorrect.';
+      case 'too-many-requests':
+        return 'Trop de tentatives. Réessayez plus tard.';
+      case 'network-request-failed':
+        return 'Vérifiez votre connexion internet.';
       default:
         return 'Erreur Firebase : ${e.code}';
+    }
+  }
+
+  Future<void> resetPassword(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+    } on FirebaseAuthException catch (e) {
+      debugPrint('Firebase Auth Erreur Reset: ${e.code}');
+      throw _getFirebaseErrorMessage(e);
+    } catch (e) {
+      debugPrint('Erreur Reset: $e');
+      throw 'Impossible d\'envoyer le lien de réinitialisation.';
     }
   }
 
