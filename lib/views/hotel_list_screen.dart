@@ -18,9 +18,8 @@ class HotelListScreen extends StatefulWidget {
 class _HotelListScreenState extends State<HotelListScreen> {
   final _hotelController = HotelController();
   final _searchController = TextEditingController();
-  List<HotelModel> _hotels = [];
-  bool _isLoading = true;
-
+  
+  String _currentQuery = '';
   double? _maxPrice;
   double? _minRating;
 
@@ -28,11 +27,9 @@ class _HotelListScreenState extends State<HotelListScreen> {
   void initState() {
     super.initState();
     final query = widget.initialQuery ?? widget.searchQuery;
-    if (query != null) {
+    if (query != null && query.isNotEmpty) {
       _searchController.text = query;
-      _performSearch(query);
-    } else {
-      _loadAllHotels();
+      _currentQuery = query;
     }
   }
 
@@ -42,33 +39,22 @@ class _HotelListScreenState extends State<HotelListScreen> {
     super.dispose();
   }
 
-  Future<void> _loadAllHotels() async {
-    setState(() => _isLoading = true);
-    final hotels = await _hotelController.getHotels();
-    _updateHotelsList(hotels);
+  void _performSearch(String query) {
+    setState(() {
+      _currentQuery = query.trim();
+    });
   }
 
-  Future<void> _performSearch(String query) async {
-    setState(() => _isLoading = true);
-    final hotels = await _hotelController.searchHotels(query);
-    _updateHotelsList(hotels);
-  }
-
-  Future<void> _applyFilters() async {
-    setState(() => _isLoading = true);
-    final hotels = await _hotelController.filterHotels(
-      maxPrice: _maxPrice,
-      minRating: _minRating,
-    );
-    _updateHotelsList(hotels);
-  }
-
-  void _updateHotelsList(List<HotelModel> hotels) {
-    if (mounted) {
-      setState(() {
-        _hotels = hotels;
-        _isLoading = false;
-      });
+  Stream<List<HotelModel>> _getHotelsStream() {
+    if (_currentQuery.isNotEmpty) {
+      return _hotelController.searchHotelsStream(_currentQuery);
+    } else if (_maxPrice != null || _minRating != null) {
+      return _hotelController.filterHotelsStream(
+        maxPrice: _maxPrice,
+        minRating: _minRating,
+      );
+    } else {
+      return _hotelController.getHotelsStream();
     }
   }
 
@@ -124,9 +110,10 @@ class _HotelListScreenState extends State<HotelListScreen> {
                             setState(() {
                               _maxPrice = null;
                               _minRating = null;
+                              _currentQuery = '';
+                              _searchController.clear();
                             });
                             Navigator.pop(context);
-                            _loadAllHotels();
                           },
                           child: const Text('Réinitialiser'),
                         ),
@@ -138,9 +125,10 @@ class _HotelListScreenState extends State<HotelListScreen> {
                             setState(() {
                               _maxPrice = tempMaxPrice;
                               _minRating = tempMinRating;
+                              _currentQuery = '';
+                              _searchController.clear();
                             });
                             Navigator.pop(context);
-                            _applyFilters();
                           },
                           child: const Text('Appliquer'),
                         ),
@@ -200,32 +188,45 @@ class _HotelListScreenState extends State<HotelListScreen> {
           ),
         ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _hotels.isEmpty
-              ? const EmptyState(
-                  icon: Icons.search_off,
-                  message: 'Aucun hôtel trouvé',
-                  subMessage: 'Essayez de modifier vos filtres',
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _hotels.length,
-                  itemBuilder: (context, index) {
-                    final hotel = _hotels[index];
-                    return HotelCard(
-                      hotel: hotel,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => HotelDetailScreen(hotel: hotel),
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
+      body: StreamBuilder<List<HotelModel>>(
+        stream: _getHotelsStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return const Center(child: Text("Erreur de chargement."));
+          }
+          final hotels = snapshot.data ?? [];
+
+          if (hotels.isEmpty) {
+            return const EmptyState(
+              icon: Icons.search_off,
+              message: 'Aucun hôtel trouvé',
+              subMessage: 'Essayez de modifier vos filtres',
+            );
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: hotels.length,
+            itemBuilder: (context, index) {
+              final hotel = hotels[index];
+              return HotelCard(
+                hotel: hotel,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => HotelDetailScreen(hotel: hotel),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

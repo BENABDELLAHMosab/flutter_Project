@@ -15,30 +15,28 @@ class BookingHistoryScreen extends StatefulWidget {
 class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
   final _bookingController = BookingController();
   final _authController = AuthController();
-  List<BookingModel> _bookings = [];
-  bool _isLoading = true;
+  
+  String? _userId;
+  String? _userRole;
 
   @override
   void initState() {
     super.initState();
-    _loadBookings();
+    _loadUser();
   }
 
-  Future<void> _loadBookings() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadUser() async {
     final userId = await _authController.getCurrentUserId();
-    if (userId != null) {
-      final bookings = await _bookingController.getUserBookings(userId);
-      if (mounted) {
-        setState(() {
-          _bookings = bookings;
-          _isLoading = false;
-        });
-      }
+    final userRole = await _authController.getCurrentUserRole();
+    if (mounted) {
+      setState(() {
+        _userId = userId;
+        _userRole = userRole;
+      });
     }
   }
 
-  Future<void> _cancelBooking(int bookingId) async {
+  Future<void> _cancelBooking(String bookingId) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -59,13 +57,10 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
 
     if (confirm == true) {
       final success = await _bookingController.cancelBooking(bookingId);
-      if (success) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Réservation annulée avec succès')),
-          );
-        }
-        _loadBookings();
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Réservation annulée avec succès')),
+        );
       }
     }
   }
@@ -74,28 +69,46 @@ class _BookingHistoryScreenState extends State<BookingHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mes Réservations'),
+        title: const Text('Réservations'),
         automaticallyImplyLeading: false, // In bottom nav
       ),
-      body: _isLoading
+      body: _userId == null 
           ? const Center(child: CircularProgressIndicator())
-          : _bookings.isEmpty
-              ? const EmptyState(
-                  icon: Icons.book_online_outlined,
-                  message: 'Aucune réservation',
-                  subMessage: 'Vos futures réservations apparaîtront ici.',
-                )
-              : ListView.builder(
+          : StreamBuilder<List<BookingModel>>(
+              stream: _userRole == 'admin' 
+                  ? _bookingController.getAllBookingsForAdminStream()
+                  : _bookingController.getBookingsByUserStream(_userId!),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return const Center(child: Text("Erreur de chargement."));
+                }
+                
+                final bookings = snapshot.data ?? [];
+                
+                if (bookings.isEmpty) {
+                  return const EmptyState(
+                    icon: Icons.book_online_outlined,
+                    message: 'Aucune réservation',
+                    subMessage: 'Vos futures réservations apparaîtront ici.',
+                  );
+                }
+                
+                return ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: _bookings.length,
+                  itemCount: bookings.length,
                   itemBuilder: (context, index) {
-                    final booking = _bookings[index];
+                    final booking = bookings[index];
                     return BookingCard(
                       booking: booking,
                       onCancel: () => _cancelBooking(booking.id!),
                     );
                   },
-                ),
+                );
+              },
+            ),
     );
   }
 }

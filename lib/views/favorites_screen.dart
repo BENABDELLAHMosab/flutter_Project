@@ -16,26 +16,20 @@ class FavoritesScreen extends StatefulWidget {
 class _FavoritesScreenState extends State<FavoritesScreen> {
   final _favoriteController = FavoriteController();
   final _authController = AuthController();
-  List<HotelModel> _favorites = [];
-  bool _isLoading = true;
+  String? _userId;
 
   @override
   void initState() {
     super.initState();
-    _loadFavorites();
+    _loadUser();
   }
 
-  Future<void> _loadFavorites() async {
-    setState(() => _isLoading = true);
+  Future<void> _loadUser() async {
     final userId = await _authController.getCurrentUserId();
-    if (userId != null) {
-      final favorites = await _favoriteController.getUserFavorites(userId);
-      if (mounted) {
-        setState(() {
-          _favorites = favorites;
-          _isLoading = false;
-        });
-      }
+    if (mounted) {
+      setState(() {
+        _userId = userId;
+      });
     }
   }
 
@@ -46,34 +40,48 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         title: const Text('Mes Favoris'),
         automaticallyImplyLeading: false, // In bottom nav
       ),
-      body: _isLoading
+      body: _userId == null
           ? const Center(child: CircularProgressIndicator())
-          : _favorites.isEmpty
-              ? const EmptyState(
-                  icon: Icons.favorite_border,
-                  message: 'Aucun favori',
-                  subMessage: 'Sauvegardez vos hôtels préférés.',
-                )
-              : ListView.builder(
+          : StreamBuilder<List<HotelModel>>(
+              stream: _favoriteController.getUserFavoritesStream(_userId!),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return const Center(child: Text("Erreur de chargement."));
+                }
+                
+                final favorites = snapshot.data ?? [];
+                
+                if (favorites.isEmpty) {
+                  return const EmptyState(
+                    icon: Icons.favorite_border,
+                    message: 'Aucun favori',
+                    subMessage: 'Sauvegardez vos hôtels préférés.',
+                  );
+                }
+                
+                return ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: _favorites.length,
+                  itemCount: favorites.length,
                   itemBuilder: (context, index) {
-                    final hotel = _favorites[index];
+                    final hotel = favorites[index];
                     return HotelCard(
                       hotel: hotel,
-                      onTap: () async {
-                        await Navigator.push(
+                      onTap: () {
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (_) => HotelDetailScreen(hotel: hotel),
                           ),
                         );
-                        // Reload favorites when coming back
-                        _loadFavorites();
                       },
                     );
                   },
-                ),
+                );
+              },
+            ),
     );
   }
 }

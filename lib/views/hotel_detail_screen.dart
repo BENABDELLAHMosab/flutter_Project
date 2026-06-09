@@ -18,7 +18,7 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
   final _favoriteController = FavoriteController();
   final _authController = AuthController();
   bool _isFavorite = false;
-  int? _userId;
+  String? _userId;
 
   @override
   void initState() {
@@ -28,7 +28,7 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
 
   Future<void> _checkFavorite() async {
     _userId = await _authController.getCurrentUserId();
-    if (_userId != null) {
+    if (_userId != null && widget.hotel.id != null) {
       final isFav = await _favoriteController.isFavorite(_userId!, widget.hotel.id!);
       if (mounted) {
         setState(() => _isFavorite = isFav);
@@ -37,7 +37,7 @@ class _HotelDetailScreenState extends State<HotelDetailScreen> {
   }
 
   Future<void> _toggleFavorite() async {
-    if (_userId == null) return;
+    if (_userId == null || widget.hotel.id == null) return;
     
     final newState = await _favoriteController.toggleFavorite(_userId!, widget.hotel.id!);
     setState(() => _isFavorite = newState);

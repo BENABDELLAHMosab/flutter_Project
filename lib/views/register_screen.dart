@@ -50,19 +50,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _passwordController.text.trim(),
       );
 
-      final success = await _authController.register(user);
+      try {
+        final success = await _authController.register(user);
 
-      if (!mounted) return;
-      setState(() => _isLoading = false);
+        if (!mounted) return;
+        setState(() => _isLoading = false);
 
-      if (success) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Compte créé avec succès ! Connectez-vous.'), backgroundColor: AppColors.success),
+          );
+          Navigator.pop(context); // Go back to login
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Erreur lors de l\'inscription.'), backgroundColor: AppColors.error),
+          );
+        }
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Compte créé avec succès ! Connectez-vous.'), backgroundColor: AppColors.success),
-        );
-        Navigator.pop(context); // Go back to login
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cet email est déjà utilisé.'), backgroundColor: AppColors.error),
+          SnackBar(content: Text(e.toString()), backgroundColor: AppColors.error),
         );
       }
     }

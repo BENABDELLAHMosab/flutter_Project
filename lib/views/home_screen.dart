@@ -108,30 +108,11 @@ class _HomeContent extends StatefulWidget {
 class _HomeContentState extends State<_HomeContent> {
   final _hotelController = HotelController();
   final _searchController = TextEditingController();
-  List<HotelModel> _hotels = [];
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadHotels();
-  }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadHotels() async {
-    setState(() => _isLoading = true);
-    final hotels = await _hotelController.getHotels();
-    if (mounted) {
-      setState(() {
-        _hotels = hotels;
-        _isLoading = false;
-      });
-    }
   }
 
   void _search() {
@@ -251,28 +232,40 @@ class _HomeContentState extends State<_HomeContent> {
                 );
               },
             ),
-            const SizedBox(height: 16),
-            _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: _hotels.length > 5 ? 5 : _hotels.length,
-                    itemBuilder: (context, index) {
-                      final hotel = _hotels[index];
-                      return HotelCard(
-                        hotel: hotel,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => HotelDetailScreen(hotel: hotel),
-                            ),
-                          ).then((_) => _loadHotels());
-                        },
-                      );
-                    },
-                  ),
+            StreamBuilder<List<HotelModel>>(
+              stream: _hotelController.getHotelsStream(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                  return const Center(child: Text("Aucun hôtel trouvé."));
+                }
+                
+                final hotels = snapshot.data!;
+                final displayCount = hotels.length > 5 ? 5 : hotels.length;
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: displayCount,
+                  itemBuilder: (context, index) {
+                    final hotel = hotels[index];
+                    return HotelCard(
+                      hotel: hotel,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => HotelDetailScreen(hotel: hotel),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                );
+              },
+            ),
           ],
         ),
       ),

@@ -82,10 +82,16 @@ class _BookingScreenState extends State<BookingScreen> {
       return;
     }
 
+    final userDetails = await _authController.getCurrentUserDetails();
+
     final dateFormat = DateFormat('yyyy-MM-dd');
     final booking = BookingModel(
       userId: userId,
+      userName: userDetails['name'] ?? 'Inconnu',
+      userEmail: userDetails['email'] ?? '',
       hotelId: widget.hotel.id!,
+      hotelName: widget.hotel.name,
+      hotelCity: widget.hotel.city,
       checkIn: dateFormat.format(_checkInDate!),
       checkOut: dateFormat.format(_checkOutDate!),
       guests: _guests,

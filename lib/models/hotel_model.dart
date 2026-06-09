@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class HotelModel {
-  final int? id;
+  final String? id;
   final String name;
   final String city;
   final String address;
@@ -12,6 +14,8 @@ class HotelModel {
   final bool hasPool;
   final bool hasRestaurant;
   final bool hasAC;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   HotelModel({
     this.id,
@@ -27,11 +31,12 @@ class HotelModel {
     required this.hasPool,
     required this.hasRestaurant,
     required this.hasAC,
+    this.createdAt,
+    this.updatedAt,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      if (id != null) 'id': id,
       'name': name,
       'city': city,
       'address': address,
@@ -39,34 +44,38 @@ class HotelModel {
       'pricePerNight': pricePerNight,
       'rating': rating,
       'imageUrl': imageUrl,
-      'hasWifi': hasWifi ? 1 : 0,
-      'hasParking': hasParking ? 1 : 0,
-      'hasPool': hasPool ? 1 : 0,
-      'hasRestaurant': hasRestaurant ? 1 : 0,
-      'hasAC': hasAC ? 1 : 0,
+      'hasWifi': hasWifi,
+      'hasParking': hasParking,
+      'hasPool': hasPool,
+      'hasRestaurant': hasRestaurant,
+      'hasAC': hasAC,
+      'createdAt': createdAt != null ? Timestamp.fromDate(createdAt!) : FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
     };
   }
 
-  factory HotelModel.fromMap(Map<String, dynamic> map) {
+  factory HotelModel.fromMap(Map<String, dynamic> map, String documentId) {
     return HotelModel(
-      id: map['id'],
-      name: map['name'],
-      city: map['city'],
-      address: map['address'],
-      description: map['description'],
-      pricePerNight: map['pricePerNight'],
-      rating: map['rating'],
-      imageUrl: map['imageUrl'],
-      hasWifi: map['hasWifi'] == 1,
-      hasParking: map['hasParking'] == 1,
-      hasPool: map['hasPool'] == 1,
-      hasRestaurant: map['hasRestaurant'] == 1,
-      hasAC: map['hasAC'] == 1,
+      id: documentId,
+      name: map['name'] ?? '',
+      city: map['city'] ?? '',
+      address: map['address'] ?? '',
+      description: map['description'] ?? '',
+      pricePerNight: (map['pricePerNight'] ?? 0).toDouble(),
+      rating: (map['rating'] ?? 0).toDouble(),
+      imageUrl: map['imageUrl'] ?? '',
+      hasWifi: map['hasWifi'] == true,
+      hasParking: map['hasParking'] == true,
+      hasPool: map['hasPool'] == true,
+      hasRestaurant: map['hasRestaurant'] == true,
+      hasAC: map['hasAC'] == true,
+      createdAt: map['createdAt'] != null ? (map['createdAt'] as Timestamp).toDate() : null,
+      updatedAt: map['updatedAt'] != null ? (map['updatedAt'] as Timestamp).toDate() : null,
     );
   }
 
   HotelModel copyWith({
-    int? id,
+    String? id,
     String? name,
     String? city,
     String? address,
@@ -79,6 +88,8 @@ class HotelModel {
     bool? hasPool,
     bool? hasRestaurant,
     bool? hasAC,
+    DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return HotelModel(
       id: id ?? this.id,
@@ -94,6 +105,8 @@ class HotelModel {
       hasPool: hasPool ?? this.hasPool,
       hasRestaurant: hasRestaurant ?? this.hasRestaurant,
       hasAC: hasAC ?? this.hasAC,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

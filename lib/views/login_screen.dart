@@ -32,24 +32,35 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
-      final user = await _authController.login(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-      );
-
-      if (!mounted) return;
-
-      setState(() => _isLoading = false);
-
-      if (user != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+      try {
+        final user = await _authController.login(
+          _emailController.text.trim(),
+          _passwordController.text.trim(),
         );
-      } else {
+
+        if (!mounted) return;
+
+        setState(() => _isLoading = false);
+
+        if (user != null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Erreur de connexion. Veuillez réessayer.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      } catch (e) {
+        if (!mounted) return;
+        setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Email ou mot de passe incorrect'),
+          SnackBar(
+            content: Text(e.toString()),
             backgroundColor: AppColors.error,
           ),
         );
@@ -59,20 +70,31 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _googleLogin() async {
     setState(() => _isLoading = true);
-    final user = await _authController.signInWithGoogle();
-    
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-    
-    if (user != null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
-    } else {
+    try {
+      final user = await _authController.signInWithGoogle();
+      
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      
+      if (user != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Connexion Google annulée ou échouée.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Connexion Google annulée ou échouée.'),
+        SnackBar(
+          content: Text(e.toString()),
           backgroundColor: AppColors.error,
         ),
       );

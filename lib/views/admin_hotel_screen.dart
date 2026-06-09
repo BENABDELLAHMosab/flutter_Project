@@ -16,9 +16,6 @@ class AdminHotelScreen extends StatefulWidget {
 class _AdminHotelScreenState extends State<AdminHotelScreen> {
   final _hotelController = HotelController();
   final _authController = AuthController();
-  List<HotelModel> _hotels = [];
-  bool _isLoading = true;
-
   @override
   void initState() {
     super.initState();
@@ -36,21 +33,11 @@ class _AdminHotelScreenState extends State<AdminHotelScreen> {
       }
       return;
     }
-    _loadHotels();
+    // Only call this once authenticated as admin
+    await _hotelController.seedHotelsIfEmpty();
   }
 
-  Future<void> _loadHotels() async {
-    setState(() => _isLoading = true);
-    final hotels = await _hotelController.getHotels();
-    if (mounted) {
-      setState(() {
-        _hotels = hotels;
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _deleteHotel(int id) async {
+  Future<void> _deleteHotel(String id) async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -65,9 +52,8 @@ class _AdminHotelScreenState extends State<AdminHotelScreen> {
 
     if (confirm == true) {
       final success = await _hotelController.deleteHotel(id);
-      if (success) {
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hôtel supprimé')));
-        _loadHotels();
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Hôtel supprimé')));
       }
     }
   }
@@ -82,7 +68,6 @@ class _AdminHotelScreenState extends State<AdminHotelScreen> {
           hotel: hotel,
           onSaved: () {
             Navigator.pop(context);
-            _loadHotels();
             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(hotel == null ? 'Hôtel ajouté' : 'Hôtel modifié')));
           },
         ),
@@ -92,6 +77,7 @@ class _AdminHotelScreenState extends State<AdminHotelScreen> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gestion Hôtels'),
@@ -103,26 +89,42 @@ class _AdminHotelScreenState extends State<AdminHotelScreen> {
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _hotels.length,
-              itemBuilder: (context, index) {
-                final hotel = _hotels[index];
-                return ListTile(
-                  leading: CircleAvatar(backgroundImage: NetworkImage(hotel.imageUrl)),
-                  title: Text(hotel.name),
-                  subtitle: Text(hotel.city),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _showHotelForm(hotel)),
-                      IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _deleteHotel(hotel.id!)),
-                    ],
-                  ),
-                );
-              },
-            ),
+      body: StreamBuilder<List<HotelModel>>(
+        stream: _hotelController.getHotelsStream(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return const Center(child: Text("Erreur de chargement."));
+          }
+          
+          final hotels = snapshot.data ?? [];
+          
+          if (hotels.isEmpty) {
+            return const Center(child: Text("Aucun hôtel."));
+          }
+          
+          return ListView.builder(
+            itemCount: hotels.length,
+            itemBuilder: (context, index) {
+              final hotel = hotels[index];
+              return ListTile(
+                leading: CircleAvatar(backgroundImage: NetworkImage(hotel.imageUrl)),
+                title: Text(hotel.name),
+                subtitle: Text(hotel.city),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(icon: const Icon(Icons.edit, color: Colors.blue), onPressed: () => _showHotelForm(hotel)),
+                    IconButton(icon: const Icon(Icons.delete, color: Colors.red), onPressed: () => _deleteHotel(hotel.id!)),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }

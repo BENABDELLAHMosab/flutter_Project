@@ -1,28 +1,62 @@
-import '../database/app_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/booking_model.dart';
 
 class BookingController {
-  final AppDatabase _db = AppDatabase.instance;
+  final CollectionReference _bookingsRef = FirebaseFirestore.instance.collection('bookings');
 
   Future<bool> createBooking(BookingModel booking) async {
-    final id = await _db.insertBooking(booking);
-    return id > 0;
+    try {
+      await _bookingsRef.add(booking.toMap());
+      return true;
+    } catch (e) {
+      debugPrint('Erreur createBooking: $e');
+      return false;
+    }
   }
 
-  Future<List<BookingModel>> getUserBookings(int userId) async {
-    return await _db.getBookingsWithHotelDetails(userId);
+  Stream<List<BookingModel>> getBookingsByUserStream(String userId) {
+    return _bookingsRef
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) {
+      final bookings = snapshot.docs.map((doc) => BookingModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
+      bookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return bookings;
+    });
   }
 
-  Future<bool> cancelBooking(int bookingId) async {
-    final count = await _db.cancelBooking(bookingId);
-    return count > 0;
+  Stream<List<BookingModel>> getAllBookingsForAdminStream() {
+    return _bookingsRef
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) => BookingModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
+    });
+  }
+
+  Future<bool> cancelBooking(String bookingId) async {
+    try {
+      await _bookingsRef.doc(bookingId).update({'status': 'cancelled'});
+      return true;
+    } catch (e) {
+      debugPrint('Erreur cancelBooking: $e');
+      return false;
+    }
   }
   
-  Future<int> getTotalBookingsCount() async {
-    return await _db.getTotalBookings();
+  Stream<int> getTotalBookingsCountStream() {
+    return _bookingsRef.snapshots().map((snapshot) => snapshot.docs.length);
   }
   
-  Future<double> getTotalBookingAmount(int userId) async {
-    return await _db.getTotalBookingAmount(userId);
+  Stream<double> getTotalBookingAmountStream() {
+    return _bookingsRef.snapshots().map((snapshot) {
+      double total = 0;
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        total += (data['totalPrice'] ?? 0).toDouble();
+      }
+      return total;
+    });
   }
 }
