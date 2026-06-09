@@ -21,7 +21,11 @@ class BookingController {
         .snapshots()
         .map((snapshot) {
       final bookings = snapshot.docs.map((doc) => BookingModel.fromMap(doc.data() as Map<String, dynamic>, doc.id)).toList();
-      bookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      bookings.sort((a, b) {
+        final aTime = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime);
+      });
       return bookings;
     });
   }
