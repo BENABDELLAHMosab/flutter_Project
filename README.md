@@ -227,12 +227,12 @@ Les captures principales de l'application sont disponibles dans le dossier `asse
 ## 14. Auteurs
 
 Projet réalisé par :
-- [Votre Nom/Prénom]
-- [Votre Partenaire]
+- BEN ABDELLAH Mosab
+- EL HADRI MOHAMED YASSINE
 
 Encadré par :
 - Prof. TBATOU Zakariae
 
 ## 15. Date limite
 
-Date limite de remise : **07 Juin 2026**
+Date de remise : **07 Juin 2026**
