@@ -235,4 +235,4 @@ Encadré par :
 
 ## 15. Date limite
 
-Date de remise : **07 Juin 2026**
+Date de remise : **10 Juin 2026**
